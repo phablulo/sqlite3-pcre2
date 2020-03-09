@@ -8,10 +8,10 @@ prefix=/usr
 .PHONY : install dist clean
 
 pcre.so : pcre.c
-	${CC} -shared -o $@ ${CFLAGS} -W -Werror pcre.c ${LIBS} -Wl,-z,defs
+	${CC} -shared -o $@ ${CFLAGS} -W -Werror pcre.c ${LIBS}
 
 install : pcre.so
-	${INSTALL} -pD -m755 pcre.so ${DESTDIR}${prefix}/lib/sqlite3/pcre.so
+	sudo ${INSTALL} -p pcre.so ${prefix}/lib/sqlite3/pcre.so
 
 dist : clean
 	mkdir sqlite3-pcre-${VERSION}
