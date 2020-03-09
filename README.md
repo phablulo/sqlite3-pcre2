@@ -6,7 +6,7 @@ The original source code was written by Alexey Tourbin and can be found at:
 [http://git.altlinux.org/people/at/packages/?p=sqlite3-pcre.git](http://git.altlinux.org/people/at/packages/?p=sqlite3-pcre.git)  
 
 ## 2020 UPDATE:
-Updated to work with MacOS. Modified the Makefile to compile and install on MacOS, changed C source code to get rid of "no string" error. 
+Updated to work with MacOS. Modified the Makefile to compile and install on MacOS, changed C source code to get rid of "no string" error. (credit to @santiagoyepez for a less hacky fix of explicitly checking for nulls) 
 
 ## Usage
 ```bash
