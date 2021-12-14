@@ -1,5 +1,5 @@
 /*
- * Written by Alexey Tourbin <at@altlinux.org>.
+ * Initially written by Alexey Tourbin <at@altlinux.org>.
  *
  * The author has dedicated the code to the public domain.  Anyone is free
  * to copy, modify, publish, use, compile, sell, or distribute the original
@@ -15,9 +15,9 @@
 SQLITE_EXTENSION_INIT1
 
 typedef struct {
-    char *s;
-    pcre *p;
-    pcre_extra *e;
+    char *pattern_str;
+    pcre *pattern_code;
+    pcre_extra *pattern_extra;
 } cache_entry;
 
 #ifndef CACHE_SIZE
@@ -26,14 +26,14 @@ typedef struct {
 
 static
 void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
-    const char *re, *str;
-    pcre *p;
-    pcre_extra *e;
+    const char *pattern_str, *subject_str;
+    pcre *pattern_code;
+    pcre_extra *pattern_extra;
 
     assert(argc == 2);
 
-    re = (const char *) sqlite3_value_text(argv[0]);
-    if (!re) {
+    pattern_str = (const char *) sqlite3_value_text(argv[0]);
+    if (!pattern_str) {
         sqlite3_result_error(ctx, "no regexp", -1);
         return;
     }
@@ -43,8 +43,8 @@ void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
         return;
     }
 
-    str = (const char *) sqlite3_value_text(argv[1]);
-    if (!str) {
+    subject_str = (const char *) sqlite3_value_text(argv[1]);
+    if (!subject_str) {
         sqlite3_result_error(ctx, "no string", -1);
         return;
     }
@@ -57,8 +57,8 @@ void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
 
         assert(cache);
 
-        for (i = 0; i < CACHE_SIZE && cache[i].s; i++)
-            if (strcmp(re, cache[i].s) == 0) {
+        for (i = 0; i < CACHE_SIZE && cache[i].pattern_str; i++)
+            if (strcmp(pattern_str, cache[i].pattern_str) == 0) {
                 found = 1;
                 break;
             }
@@ -72,39 +72,39 @@ void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
             cache_entry c;
             const char *err;
             int pos;
-            c.p = pcre_compile(re, 0, &err, &pos, NULL);
-            if (!c.p) {
-                char *e2 = sqlite3_mprintf("%s: %s (offset %d)", re, err, pos);
+            c.pattern_code = pcre_compile(pattern_str, 0, &err, &pos, NULL);
+            if (!c.pattern_code) {
+                char *e2 = sqlite3_mprintf("%s: %s (offset %d)", pattern_str, err, pos);
                 sqlite3_result_error(ctx, e2, -1);
                 sqlite3_free(e2);
                 return;
             }
-            c.e = pcre_study(c.p, 0, &err);
-            c.s = strdup(re);
-            if (!c.s) {
+            c.pattern_extra = pcre_study(c.pattern_code, 0, &err);
+            c.pattern_str = strdup(pattern_str);
+            if (!c.pattern_str) {
                 sqlite3_result_error(ctx, "strdup: ENOMEM", -1);
-                pcre_free(c.p);
-                pcre_free(c.e);
+                pcre_free(c.pattern_code);
+                pcre_free(c.pattern_extra);
                 return;
             }
             i = CACHE_SIZE - 1;
-            if (cache[i].s) {
-                free(cache[i].s);
-                assert(cache[i].p);
-                pcre_free(cache[i].p);
-                pcre_free(cache[i].e);
+            if (cache[i].pattern_str) {
+                free(cache[i].pattern_str);
+                assert(cache[i].pattern_code);
+                pcre_free(cache[i].pattern_code);
+                pcre_free(cache[i].pattern_extra);
             }
             memmove(cache + 1, cache, i * sizeof(cache_entry));
             cache[0] = c;
         }
-        p = cache[0].p;
-        e = cache[0].e;
+        pattern_code = cache[0].pattern_code;
+        pattern_extra = cache[0].pattern_extra;
     }
 
     {
         int rc;
-        assert(p);
-        rc = pcre_exec(p, e, str, strlen(str), 0, 0, NULL, 0);
+        assert(pattern_code);
+        rc = pcre_exec(pattern_code, pattern_extra, subject_str, strlen(subject_str), 0, 0, NULL, 0);
         sqlite3_result_int(ctx, rc >= 0);
         return;
     }
