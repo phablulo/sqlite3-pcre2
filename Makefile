@@ -19,4 +19,4 @@ dist : clean
 	tar -czf sqlite3-pcre2-${VERSION}.tar.gz sqlite3-pcre2-${VERSION}
 
 clean :
-	-rm -f pcre2.so
+	-rm -f *.so
