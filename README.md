@@ -1,5 +1,5 @@
 # Sqlite3-pcre2: Regex Extension
-This is sqlite3-pcre2, an extension for sqlite3 that uses libpcre to provide the REGEXP() function.
+This is sqlite3-pcre2, an extension for sqlite3 that uses libpcre2 to provide the REGEXP() function.
 
 The original source code was written by Alexey Tourbin and can be found at:
 [http://git.altlinux.org/people/at/packages/?p=sqlite3-pcre.git](http://git.altlinux.org/people/at/packages/?p=sqlite3-pcre.git)
@@ -13,7 +13,7 @@ The original source code was written by Alexey Tourbin and can be found at:
 ```bash
 sudo apt-get install \
     libsqlite3-dev \
-    libpcre-dev
+    libpcre2-dev
 ```
 
 ### Installation
@@ -37,9 +37,9 @@ SELECT 'asdf' REGEXP '(?i)^A'
 ```
 
 
-## PCRE library
+## PCRE2 library
 
-The documentation of the PCRE library can be found at: [http://pcre.org/](http://pcre.org/).
+The documentation of the PCRE2 library can be found at: [http://pcre.org/](http://pcre.org/).
 
 The regular expression syntax documentation can be found [https://perldoc.perl.org/perlre](here).
 
@@ -49,6 +49,8 @@ The regular expression syntax documentation can be found [https://perldoc.perl.o
 ### 2021 UPDATE
 
 - Rename the lib from pcre.so to pcre2.so.
+- Use the libpcre2 instead of libpcre.
+
 
 ### 2020 UPDATE
 

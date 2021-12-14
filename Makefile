@@ -1,8 +1,8 @@
 VERSION=0.1.1
 CC=cc
 INSTALL=install
-CFLAGS=$(shell pkg-config --cflags sqlite3 libpcre) -fPIC
-LIBS=$(shell pkg-config --libs libpcre)
+CFLAGS=$(shell pkg-config --cflags sqlite3) $(shell pcre2-config --cflags) -fPIC
+LIBS=$(shell pcre2-config --libs8)
 prefix=/usr
 
 .PHONY : install dist clean

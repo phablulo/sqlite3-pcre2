@@ -6,18 +6,18 @@
  * code, either in source code form or as a compiled binary, for any purpose,
  * commercial or non-commercial, and by any means.
  */
+#define PCRE2_CODE_UNIT_WIDTH 8
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pcre.h>
+#include <pcre2.h>
 #include <sqlite3ext.h>
 
 SQLITE_EXTENSION_INIT1
 
 typedef struct {
     char *pattern_str;
-    pcre *pattern_code;
-    pcre_extra *pattern_extra;
+    pcre2_code *pattern_code;
 } cache_entry;
 
 #ifndef CACHE_SIZE
@@ -27,8 +27,7 @@ typedef struct {
 static
 void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
     const char *pattern_str, *subject_str;
-    pcre *pattern_code;
-    pcre_extra *pattern_extra;
+    pcre2_code *pattern_code;
 
     assert(argc == 2);
 
@@ -71,43 +70,71 @@ void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
         } else {
             cache_entry c;
             const char *err;
-            int pos;
-            c.pattern_code = pcre_compile(pattern_str, 0, &err, &pos, NULL);
+            int error_code;
+            PCRE2_SIZE error_position;
+            c.pattern_code = pcre2_compile(
+                pattern_str,           /* the pattern */
+                PCRE2_ZERO_TERMINATED, /* indicates pattern is zero‐terminated */
+                0,                     /* default options */
+                &error_code,           /* for error number */
+                &error_position,       /* for error offset */
+                NULL);                 /* use default compile context */
             if (!c.pattern_code) {
+                PCRE2_UCHAR error_buffer[256];
+                pcre2_get_error_message(error_code, error_buffer, sizeof(error_buffer));
                 char *e2 = sqlite3_mprintf(
                     "Cannot compile pattern \"%s\" at offset %d: %s",
-                    pattern_str, pos, err);
+                    pattern_str, (int)error_position, error_buffer);
                 sqlite3_result_error(ctx, e2, -1);
                 sqlite3_free(e2);
                 return;
             }
-            c.pattern_extra = pcre_study(c.pattern_code, 0, &err);
             c.pattern_str = strdup(pattern_str);
             if (!c.pattern_str) {
                 sqlite3_result_error(ctx, "strdup: ENOMEM", -1);
-                pcre_free(c.pattern_code);
-                pcre_free(c.pattern_extra);
+                pcre2_code_free(c.pattern_code);
                 return;
             }
             i = CACHE_SIZE - 1;
             if (cache[i].pattern_str) {
                 free(cache[i].pattern_str);
                 assert(cache[i].pattern_code);
-                pcre_free(cache[i].pattern_code);
-                pcre_free(cache[i].pattern_extra);
+                pcre2_code_free(cache[i].pattern_code);
             }
             memmove(cache + 1, cache, i * sizeof(cache_entry));
             cache[0] = c;
         }
         pattern_code = cache[0].pattern_code;
-        pattern_extra = cache[0].pattern_extra;
     }
 
     {
         int rc;
+        pcre2_match_data *match_data;
         assert(pattern_code);
-        rc = pcre_exec(pattern_code, pattern_extra, subject_str, strlen(subject_str), 0, 0, NULL, 0);
-        sqlite3_result_int(ctx, rc >= 0);
+
+        match_data = pcre2_match_data_create_from_pattern(pattern_code, NULL);
+        rc = pcre2_match(
+          pattern_code,         /* the compiled pattern */
+          subject_str,          /* the subject string */
+          PCRE2_ZERO_TERMINATED,/* indicate that the subject is zero-terminated */
+          0,                    /* start at offset 0 in the subject */
+          0,                    /* default options */
+          match_data,           /* block for storing the result */
+          NULL);                /* use default match context */
+
+        assert(rc != 0);  // because we have not set match_data
+        if(rc >= 0) {
+          // Normal case because we have not set match_data
+          sqlite3_result_int(ctx, 1);
+        } else if(rc == PCRE2_ERROR_NOMATCH) {
+          sqlite3_result_int(ctx, 0);
+        } else { // (rc < 0 and the code is not one of the above)
+            PCRE2_UCHAR error_buffer[256];
+            pcre2_get_error_message(rc, error_buffer, sizeof(error_buffer));
+            sqlite3_result_error(ctx, error_buffer, -1);
+            return;
+        }
+        pcre2_match_data_free(match_data);
         return;
     }
 }
