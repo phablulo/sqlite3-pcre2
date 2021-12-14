@@ -17,6 +17,7 @@ SQLITE_EXTENSION_INIT1
 
 typedef struct {
     char *pattern_str;
+    int pattern_len;
     pcre2_code *pattern_code;
 } cache_entry;
 
@@ -27,6 +28,7 @@ typedef struct {
 static
 void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
     const char *pattern_str, *subject_str;
+    int pattern_len, subject_len;
     pcre2_code *pattern_code;
 
     assert(argc == 2);
@@ -40,12 +42,14 @@ void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
         sqlite3_result_error(ctx, "no pattern", -1);
         return;
     }
+    pattern_len = sqlite3_value_bytes(argv[0]);
 
     subject_str = (const char *) sqlite3_value_text(argv[1]);
     if (!subject_str) {
         sqlite3_result_error(ctx, "no subject", -1);
         return;
     }
+    subject_len = sqlite3_value_bytes(argv[1]);
 
     /* simple LRU cache */
     {
@@ -56,7 +60,10 @@ void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
         assert(cache);
 
         for (i = 0; i < CACHE_SIZE && cache[i].pattern_str; i++)
-            if (strcmp(pattern_str, cache[i].pattern_str) == 0) {
+            if (
+                pattern_len == cache[i].pattern_len
+                && memcmp(pattern_str, cache[i].pattern_str, pattern_len) == 0
+            ) {
                 found = 1;
                 break;
             }
@@ -73,7 +80,7 @@ void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
             PCRE2_SIZE error_position;
             c.pattern_code = pcre2_compile(
                 pattern_str,           /* the pattern */
-                PCRE2_ZERO_TERMINATED, /* indicates pattern is zero‐terminated */
+                pattern_len,           /* the length of the pattern */
                 0,                     /* default options */
                 &error_code,           /* for error number */
                 &error_position,       /* for error offset */
@@ -88,12 +95,14 @@ void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
                 sqlite3_free(e2);
                 return;
             }
-            c.pattern_str = strdup(pattern_str);
+            c.pattern_str = malloc(pattern_len);
             if (!c.pattern_str) {
-                sqlite3_result_error(ctx, "strdup: ENOMEM", -1);
+                sqlite3_result_error(ctx, "malloc: ENOMEM", -1);
                 pcre2_code_free(c.pattern_code);
                 return;
             }
+            memcpy(c.pattern_str, pattern_str, pattern_len);
+            c.pattern_len = pattern_len;
             i = CACHE_SIZE - 1;
             if (cache[i].pattern_str) {
                 free(cache[i].pattern_str);
@@ -115,7 +124,7 @@ void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
         rc = pcre2_match(
           pattern_code,         /* the compiled pattern */
           subject_str,          /* the subject string */
-          PCRE2_ZERO_TERMINATED,/* indicate that the subject is zero-terminated */
+          subject_len,          /* the length of the subject */
           0,                    /* start at offset 0 in the subject */
           0,                    /* default options */
           match_data,           /* block for storing the result */
