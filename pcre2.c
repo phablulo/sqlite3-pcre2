@@ -34,7 +34,7 @@ void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
 
     pattern_str = (const char *) sqlite3_value_text(argv[0]);
     if (!pattern_str) {
-        sqlite3_result_error(ctx, "no regexp", -1);
+        sqlite3_result_error(ctx, "no pattern", -1);
         return;
     }
 
@@ -45,7 +45,7 @@ void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
 
     subject_str = (const char *) sqlite3_value_text(argv[1]);
     if (!subject_str) {
-        sqlite3_result_error(ctx, "no string", -1);
+        sqlite3_result_error(ctx, "no subject", -1);
         return;
     }
 
@@ -74,7 +74,9 @@ void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
             int pos;
             c.pattern_code = pcre_compile(pattern_str, 0, &err, &pos, NULL);
             if (!c.pattern_code) {
-                char *e2 = sqlite3_mprintf("%s: %s (offset %d)", pattern_str, err, pos);
+                char *e2 = sqlite3_mprintf(
+                    "Cannot compile pattern \"%s\" at offset %d: %s",
+                    pattern_str, pos, err);
                 sqlite3_result_error(ctx, e2, -1);
                 sqlite3_free(e2);
                 return;
