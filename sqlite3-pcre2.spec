@@ -1,11 +1,11 @@
-Name: sqlite3-pcre
+Name: sqlite3-pcre2
 Version: 0.1.1
 Release: 0
 
 Summary: Perl-compatible regular expression support for the SQLite
 License: Public Domain
 Group: Databases
-URL: http://git.altlinux.org/people/at/packages/?p=sqlite3-pcre.git
+URL: https://github.com/christian-proust/sqlite3-pcre2
 
 Source: %name-%version.tar.gz
 
@@ -33,11 +33,11 @@ for regular expression matching.
 %setup -q
 
 %build
-make 
+make
 
 #check
 sqlite3 >out <<EOF
-.load ./pcre.so
+.load ./pcre2.so
 SELECT "asdf" REGEXP "(?i)^A";
 EOF
 grep 1 out
@@ -47,7 +47,7 @@ make DESTDIR=%buildroot%_libdir install
 
 %files
 %dir %_libdir/sqlite3
-%_libdir/sqlite3/pcre.so
+%_libdir/sqlite3/pcre2.so
 
 %changelog
 * Thu Nov 02 2006 Alexey Tourbin <at@altlinux.ru> 0.1-alt1
