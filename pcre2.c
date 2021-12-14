@@ -30,15 +30,14 @@ void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
     pcre2_code *pattern_code;
 
     assert(argc == 2);
+    /* check null */
+    if (sqlite3_value_type(argv[0]) == SQLITE_NULL || sqlite3_value_type(argv[1]) == SQLITE_NULL) {
+        return;
+    }
 
     pattern_str = (const char *) sqlite3_value_text(argv[0]);
     if (!pattern_str) {
         sqlite3_result_error(ctx, "no pattern", -1);
-        return;
-    }
-
-    /* check null */
-    if (sqlite3_value_type(argv[1]) == SQLITE_NULL) {
         return;
     }
 

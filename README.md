@@ -50,6 +50,7 @@ The regular expression syntax documentation can be found [https://perldoc.perl.o
 
 - Rename the lib from pcre.so to pcre2.so.
 - Use the libpcre2 instead of libpcre.
+- Handle a NULL value for both pattern and subject.
 
 
 ### 2020 UPDATE
