@@ -1,14 +1,22 @@
 VERSION=0.1.1
 CC=cc
+PLANTUML=plantuml
 INSTALL=install
 CFLAGS=$(shell pkg-config --cflags sqlite3) $(shell pcre2-config --cflags) -fPIC
 LIBS=$(shell pcre2-config --libs8)
 prefix=/usr
 
-.PHONY : check install dist clean
+.PHONY : doc check install dist clean
 
 pcre2.so: pcre2.c
 	${CC} -shared -o $@ ${CFLAGS} -W -Werror $^ ${LIBS}
+
+
+doc: test/50-run.svg
+
+
+%.svg: %.puml
+	${PLANTUML} -tsvg $<
 
 # Generate the test spec
 test/db.sqlite3: test/10-init/*.sql

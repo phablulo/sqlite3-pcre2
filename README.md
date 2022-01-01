@@ -24,6 +24,18 @@ make
 make install
 ```
 
+### Development
+
+The tests and the documentation can be generated using:
+
+```bash
+make check
+make doc
+```
+
+See [test](test) documentation.
+
+
 ## Usage
 
 ### REGEXP instruction
