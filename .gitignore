@@ -1,2 +1,5 @@
 .idea/
 *.so
+*.swp
+test/*.phony
+test/db.sqlite3
