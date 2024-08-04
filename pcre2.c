@@ -79,12 +79,12 @@ void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
             int error_code;
             PCRE2_SIZE error_position;
             c.pattern_code = pcre2_compile(
-                pattern_str,           /* the pattern */
-                pattern_len,           /* the length of the pattern */
-                0,                     /* default options */
-                &error_code,           /* for error number */
-                &error_position,       /* for error offset */
-                NULL);                 /* use default compile context */
+                (unsigned char*)pattern_str, /* the pattern */
+                pattern_len,                 /* the length of the pattern */
+                0,                           /* default options */
+                &error_code,                 /* for error number */
+                &error_position,             /* for error offset */
+                NULL);                       /* use default compile context */
             if (!c.pattern_code) {
                 PCRE2_UCHAR error_buffer[256];
                 pcre2_get_error_message(error_code, error_buffer, sizeof(error_buffer));
@@ -122,13 +122,13 @@ void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
 
         match_data = pcre2_match_data_create_from_pattern(pattern_code, NULL);
         rc = pcre2_match(
-          pattern_code,         /* the compiled pattern */
-          subject_str,          /* the subject string */
-          subject_len,          /* the length of the subject */
-          0,                    /* start at offset 0 in the subject */
-          0,                    /* default options */
-          match_data,           /* block for storing the result */
-          NULL);                /* use default match context */
+          pattern_code,                 /* the compiled pattern */
+          (unsigned char*)subject_str,  /* the subject string */
+          subject_len,                  /* the length of the subject */
+          0,                            /* start at offset 0 in the subject */
+          0,                            /* default options */
+          match_data,                   /* block for storing the result */
+          NULL);                        /* use default match context */
 
         assert(rc != 0);  // because we have not set match_data
         if(rc >= 0) {
@@ -139,7 +139,7 @@ void regexp(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
         } else { // (rc < 0 and the code is not one of the above)
             PCRE2_UCHAR error_buffer[256];
             pcre2_get_error_message(rc, error_buffer, sizeof(error_buffer));
-            sqlite3_result_error(ctx, error_buffer, -1);
+            sqlite3_result_error(ctx, (char*)error_buffer, -1);
             return;
         }
         pcre2_match_data_free(match_data);
